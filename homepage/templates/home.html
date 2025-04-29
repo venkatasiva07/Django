@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+
+{% block title %} Home {% endblock title %}
+
+
+{% block content %}
+
+    <div style="color:#ea2088; font-style: bold; font-size: large; border-bottom: 1px solid #ea2088">Welcome, {{ request.user.username }}</div>
+
+    <br>
+
+    <div id="container" style="position: relative; height:45vh; border: 1px ridge #ccc; border-radius: 10px; padding: 10px;" class="align-middle table-bordered">
+        <canvas id="bar-graph"></canvas>
+    </div>
+
+    <br>
+
+    <div class="row justify-content-center">
+        <div class="col-md-3">
+            <a href="{% url 'select-supplier' %}" class="btn  ghost-blue  btn-block btn-huge">new purchase</a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'new-sale' %}" class="btn ghost-blue  btn-block btn-huge">new sale</a>
+        </div>
+    </div>
+
+    <br>
+
+    <div class="content-section">
+        <div class="row">
+            <div class="col-md-6">
+                <div style="color:#ea2088; font-style: bold; font-size: large; border-bottom: 2px solid #ccc">Most Recent Sales</div><br>
+                {% for item in sales %}
+                    {% if not forloop.first %}
+                        <br><div style="border-bottom: 0.5px solid #ea2088"></div><br>
+                    {% endif %}
+                    <div class="row">               
+                        <div class="col-md-9"> 
+                            Bill No: {{ item.billno }} <br> 
+                            Purchased by {{ item.name }} <br>
+                            <small>{{ item.time.date }}</small>
+                        </div>
+                        <div class="col-md-2" > {{ item.get_total_price }} <br> <br> <a style="color:white;background-color: #ea2088;padding:2px 5px;border-radius: 4px;font-size: small;" href="{% url 'sale-bill' item.billno %}">View Bill</a> </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="col-md-6">
+                <div style="color:#ea2088; font-style: bold; font-size: large; border-bottom: 2px solid #ccc">Most Recent Purchases</div><br>
+                {% for item in purchases %}
+                    {% if not forloop.first %}
+                        <br><div style="border-bottom: 0.5px solid #ea2088"></div><br>
+                    {% endif %}
+                    <div class="row">               
+                        <div class="col-md-9"> 
+                            Bill No: {{ item.billno }} <br> 
+                            Purchased by {{ item.supplier.name }} <br>
+                            <small>{{ item.time.date }}</small>
+                        </div>
+                        <div class="col-md-2"> {{ item.get_total_price }} <br> <br> <a class="view-bill" href="{% url 'purchase-bill' item.billno %}">View Bill</a> </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+
+  <!-- Loading Chart JS -->
+  <script src="{% static 'js/Chart.min.js' %}"></script>  
+  <script>
+      Chart.defaults.global.defaultFontColor = '#000';
+
+      // Sales data to be used in the chart
+      var barConfig = {
+          type: 'bar',
+          data: {
+              datasets: [{
+                  backgroundColor: '#ea2088',
+                  label: 'Total Sales Quantity',  // Changed to represent sales
+                  data: {{ sales_data|safe }},  // This should contain sales data
+              }],
+              labels: {{ sales_labels|safe }}  // This should be the names of products or stock
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+          },
+      };
+
+      // Initialize the chart when the page loads
+      window.onload = function() {
+          var ctx = document.getElementById('bar-graph').getContext('2d');
+          window.BarSales = new Chart(ctx, barConfig);
+      };
+  </script>
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script>
+       // Data passed from Django to the template
+       const salesLabels = {{ labels|safe }};
+       const salesData = {{ values|safe }};
+       
+       // Set up the chart
+       const ctx = document.getElementById('pie-chart').getContext('2d');
+       const pieChart = new Chart(ctx, {
+           type: 'pie',
+           data: {
+               labels: salesLabels, // Labels for the pie chart (brand names)
+               datasets: [{
+                   data: salesData, // Data for each brand's sales
+                   backgroundColor: ['#FF5733', '#33FF57', '#3357FF', '#F1C40F', '#9B59B6'], // You can customize the colors
+                   hoverOffset: 4
+               }]
+           },
+           options: {
+               responsive: true,
+               plugins: {
+                   legend: {
+                       position: 'top',
+                   },
+                   tooltip: {
+                       callbacks: {
+                           label: function(tooltipItem) {
+                               return tooltipItem.label + ': ' + tooltipItem.raw;
+                           }
+                       }
+                   }
+               }
+           }
+       });
+   </script>
+
+{% endblock content %}
